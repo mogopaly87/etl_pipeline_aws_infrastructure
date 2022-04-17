@@ -9,7 +9,6 @@ ARN = config.get("IAM_ROLE", "ARN")
 LOG_DATA = config.get("S3", "LOG_DATA")
 LOG_JSONPATH = config.get("S3", "LOG_JSONPATH")
 SONGS_DATA = config.get("S3", "SONGS_DATA")
-# SONGS_JSONPATH = config.get("S3", "SONGS_JSONPATH")
 
 # DROP TABLES
 
@@ -144,18 +143,53 @@ staging_songs_copy = (
 # FINAL TABLES
 
 songplay_table_insert = """
+    INSERT INTO songplays (start_time, user_id, level, song_id, artist_id, session_id, location, user_agent)
+    SELECT TO_TIMESTAMP(se.ts::BIGINT::text, 'YYYYMMDDHH24MISS')::timestamp at time zone 'UTC' at time zone 'PST' AS start_time, se.userid, se.level, ss.song_id, ss.artist_id, se.sessionid, se.location, se.useragent
+    FROM staging_events se
+    JOIN staging_songs ss
+        ON se.artist = ss.artist_name
+    WHERE se.page = 'NextSong';
 """
 
 user_table_insert = """
+    
+    INSERT INTO users (                 user_id,
+                                        first_name,
+                                        last_name,
+                                        gender,
+                                        level)
+    SELECT  DISTINCT se.userId          AS user_id,
+            se.firstName                AS first_name,
+            se.lastName                 AS last_name,
+            se.gender                   AS gender,
+            se.level                    AS level
+    FROM staging_events AS se
+    WHERE se.page = 'NextSong';
 """
 
 song_table_insert = """
+    INSERT INTO songs (song_id, title, artist_id, year, duration)
+    SELECT DISTINCT song_id, title, artist_id, year, duration
+    FROM staging_songs;
 """
 
 artist_table_insert = """
+    INSERT INTO artists(artist_id, name, location, latitude, longitude)
+    SELECT DISTINCT artist_id, artist_name, artist_location, artist_latitude, artist_longitude
+    FROM staging_songs;
 """
 
 time_table_insert = """
+    INSERT INTO time(start_time, hour, day, week, month, year, weekday)
+    SELECT DISTINCT TO_TIMESTAMP(ts::BIGINT::text, 'YYYYMMDDHH24MISS')::timestamp at time zone 'UTC' at time zone 'PST' AS start_time,
+        EXTRACT(HOUR FROM TO_TIMESTAMP(ts::BIGINT::text, 'YYYYMMDDHH24MISS')::timestamp at time zone 'UTC' at time zone 'PST') AS hour,
+        EXTRACT(DAY FROM TO_TIMESTAMP(ts::BIGINT::text, 'YYYYMMDDHH24MISS')::timestamp at time zone 'UTC' at time zone 'PST') AS DAY,
+        EXTRACT(WEEK FROM TO_TIMESTAMP(ts::BIGINT::text, 'YYYYMMDDHH24MISS')::timestamp at time zone 'UTC' at time zone 'PST') AS week,
+        EXTRACT(MONTH FROM TO_TIMESTAMP(ts::BIGINT::text, 'YYYYMMDDHH24MISS')::timestamp at time zone 'UTC' at time zone 'PST') AS month,
+        EXTRACT(YEAR FROM TO_TIMESTAMP(ts::BIGINT::text, 'YYYYMMDDHH24MISS')::timestamp at time zone 'UTC' at time zone 'PST') AS year,
+        EXTRACT(DOW FROM TO_TIMESTAMP(ts::BIGINT::text, 'YYYYMMDDHH24MISS')::timestamp at time zone 'UTC' at time zone 'PST') AS weekday
+    
+    FROM staging_events;
 """
 
 # QUERY LISTS
@@ -178,7 +212,7 @@ drop_table_queries = [
     artist_table_drop,
     time_table_drop,
 ]
-copy_table_queries = [staging_events_copy, staging_songs_copy]  # , staging_songs_copy
+copy_table_queries = [staging_events_copy, staging_songs_copy]
 insert_table_queries = [
     songplay_table_insert,
     user_table_insert,
