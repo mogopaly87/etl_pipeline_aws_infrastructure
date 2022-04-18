@@ -24,4 +24,4 @@ The implements an ETL(Extract, Transform, Load) pipeline by extracting data, in 
 The Sparkify analytics database is designed as a Star Schema. Hence it contains a Fact Table and four supporting dimension tables. Below is an image of the schema design:
 </p>
 <br>
-![](./erd.jpg)
+![](readme_image/erd.jpg)
