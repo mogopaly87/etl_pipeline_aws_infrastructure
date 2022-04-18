@@ -9,7 +9,7 @@ This project aims to process data from a music streaming starup called Sparkify.
 There are two categories of files in the S3 bucket:
 <ul>
     <li><strong>s3://udacity-dend/song_data</strong>: These contain data about artists and songs.</li>
-    <li><strong></strong>s3://udacity-dend/log_data</strong></li>
+    <li><strong>s3://udacity-dend/log_data</strong>: These contain event log data from customers</li>
 </ul>
 </p>
 <br>
